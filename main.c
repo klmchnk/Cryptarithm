@@ -5,6 +5,7 @@
 #include <string.h>
 #include <Windows.h>
 #include <stdbool.h>
+#include <math.h>
 
 struct Letter
 {
@@ -20,30 +21,30 @@ int find_symbol(char s)
 {
 	for (int i = 0; i < MAX_LETTERS; i++)
 		if (Letters[i].symbol == s)
-			return Letters[i].digit;
+			return i;
 	return -1;
 }
 
-bool first_symbol(char s)
+void swap(int i, int j)
 {
-	for (int i = 0; i < MAX_LETTERS; i++)
-		if (Letters[i].symbol == s)
-			return Letters[i].isFirst;
-	return false;
+	int tmp = Letters[i].digit;
+	Letters[i].digit = Letters[j].digit;
+	Letters[j].digit = tmp;
 }
 
 void get_array_of_letters(char* str)
 {
-	int i;
+	int i, idx;
 	for (i = 0; i < strlen(str); i++)
 	{
 		if (str[i] > 64 && str[i] < 91)
 		{
-			if (find_symbol(str[i]) == -1)
+			idx = find_symbol(str[i]);
+
+			if (idx == -1)
 			{
 				if (i == 0 || str[i - 1] == ' ')
 					Letters[numberOfLetters].isFirst = true;
-
 				Letters[numberOfLetters].symbol = str[i];
 				Letters[numberOfLetters].digit = numberOfLetters;
 				numberOfLetters++;
@@ -51,48 +52,56 @@ void get_array_of_letters(char* str)
 			else
 			{
 				if (i == 0 || str[i - 1] == ' ')
-					Letters[find_symbol(str[i])].isFirst = true;
+					Letters[idx].isFirst = true;
 			}
 		}
 	}
 
 	for (i = 9; i > numberOfLetters - 1; i--)
 		Letters[i].digit = i;
+
+	swap(0, 1);
 }
 
 int check_sum(char* str)
 {
-	int sum = 0, tmp = 0, answer = 0, digit = 0, i = 0;
+	int i = 0 , sum = 0, tmp = 0, answer = 0, idx = 0;
+	
+	for (i = strlen(str) - 1; str[i] != ' '; i--)
+	{
+		idx = find_symbol(str[i]);
 
-	for (i; str[i] != '='; i++)
+		if (Letters[idx].digit == 0)
+			if (Letters[idx].isFirst)
+			{
+				swap(idx, idx + 1);
+				return 0;
+			}
+
+		answer += Letters[idx].digit * pow(10, strlen(str) - 1 - i);
+	}
+
+	for (i = 0; str[i] != '='; i++)
 	{
 		if (str[i] > 64 && str[i] < 91)
 		{
-			digit = find_symbol(str[i]);
+			idx = find_symbol(str[i]);
 
-			if (digit == 0)
-				if (first_symbol(str[i]))
+			if (Letters[idx].digit == 0)
+				if (Letters[idx].isFirst)
+				{
+					swap(idx, idx + 1);
 					return 0;
+				}
 
-			tmp = tmp * 10 + digit;
+			tmp = tmp * 10 + Letters[idx].digit;
 		}
 		else
 		{
 			sum += tmp;
+			if (sum > answer)
+				return 0;
 			tmp = 0;
-		}
-	}
-
-	for (i; i < strlen(str); i++)
-	{
-		if (str[i] > 64 && str[i] < 91)
-		{
-			digit = find_symbol(str[i]);
-
-			if (digit == 0)
-				if (first_symbol(str[i]))
-					return 0;
-			answer = answer * 10 + find_symbol(str[i]);
 		}
 	}
 
@@ -103,19 +112,17 @@ int check_sum(char* str)
 	return 0;
 }
 
-void swap(int i, int j)
-{
-	int tmp = Letters[i].digit;
-	Letters[i].digit = Letters[j].digit;
-	Letters[j].digit = tmp;
-}
-
 void solution(char* str)
 {
+	int lastLetterValue = 0;
+
 	while (1)
 	{
-		if (check_sum(str))
-			return;
+		if(lastLetterValue != Letters[numberOfLetters - 1].digit)
+			if (check_sum(str))
+				return;
+
+		lastLetterValue = Letters[numberOfLetters - 1].digit;
 
 		int j = MAX_LETTERS - 2;
 		int k = MAX_LETTERS - 1;
@@ -141,7 +148,7 @@ void print_answer(char* str)
 	for (int i = 0; i < strlen(str); i++)
 	{
 		if (str[i] > 64 && str[i] < 91)
-			printf("%d", find_symbol(str[i]));
+			printf("%d", Letters[find_symbol(str[i])].digit);
 		else
 			printf("%c", str[i]);
 	}
